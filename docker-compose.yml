@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:12-alpine
+    container_name: postgres12
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: simple_bank
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  app:
+    image: golang:1.20
+    container_name: go
+    volumes:
+      - D:\Projects\simplebank:/go/src/app
+    working_dir: /go/src/app
+    #command: go run main.go
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
