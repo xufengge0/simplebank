@@ -10,8 +10,10 @@ import (
 
 const (
 	dbDriver = "postgres"
-	//dbSource = "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable"
-	dbSource = "host=postgres12 port=5432 user=root password=secret dbname=simple_bank sslmode=disable"
+	// github action
+	dbSource = "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable"
+	// 容器中测试
+	//dbSource = "host=postgres12 port=5432 user=root password=secret dbname=simple_bank sslmode=disable"
 )
 
 var testQueries *Queries
