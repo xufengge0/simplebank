@@ -12,8 +12,9 @@ import (
 
 // 创建随机的Account:使每个测试互相独立
 func creatRandomAccount(t *testing.T) Account {
+	user := creatRandomUser(t)
 	arg := CreateAccountParams{
-		Owner:    util.RandomOwner(),
+		Owner:    user.Username,
 		Balance:  util.RandomBlance(),
 		Currency: util.RandomCurrency(),
 	}
@@ -71,17 +72,25 @@ func TestDeleteAccount(t *testing.T) {
 	require.Empty(t, account2)
 }
 func TestListAccounts(t *testing.T) {
+	var lastAccount Account
+
 	// 创建测试account
 	for i := 0; i < 10; i++ {
-		creatRandomAccount(t)
+		lastAccount = creatRandomAccount(t)
 	}
 
-	arg := ListAccountsParams{Limit: 5, Offset: 5} // 返回5条记录，偏移量为5
+	arg := ListAccountsParams{
+		Owner:  lastAccount.Owner,
+		Limit:  5,
+		Offset: 0,
+	} // 返回5条记录，偏移量为0
 	accounts, err := testQueries.ListAccounts(context.Background(), arg)
 	require.NoError(t, err)
-	require.Len(t, accounts, 5)
+	require.NotEmpty(t, accounts)
 
 	for _, account := range accounts {
 		require.NotEmpty(t, account)
+		require.Equal(t, lastAccount.Owner, account.Owner)
+
 	}
 }
