@@ -45,3 +45,7 @@ func RandomCurrency() string {
 	k := len(currencies)
 	return currencies[rand.Intn(k)]
 }
+// 随机生成email
+func RandomEmail() string {
+	return RandomOwner() + "@email.com"
+}

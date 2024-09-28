@@ -1,8 +1,6 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
+# 测试
 name: ci-test
-
+# 触发条件：每次push/pull main
 on:
   push:
     branches: [ "main" ]
@@ -10,10 +8,9 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   test:
     runs-on: ubuntu-latest
-
+    # 依赖的服务
     services:
       postgres:
         image: postgres:12
@@ -29,7 +26,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        
+    # 执行的步骤
     steps:
     - uses: actions/checkout@v4
 
