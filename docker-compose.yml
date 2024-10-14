@@ -1,30 +1,35 @@
-version: '3.8'
-
+version: '3.9'
 services:
-  db:
+
+  postgres:
     image: postgres:12-alpine
-    container_name: postgres12
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: simple_bank
     ports:
-      - "5432:5432"
-    networks:
-      - app-network
+      - 5432:5432
+  redis:
+    image: redis:7-alpine
+    
 
-  app:
-    image: golang:1.20
-    container_name: go
-    volumes:
-      - D:\Projects\simplebank:/go/src/app
-    working_dir: /go/src/app
-    #command: go run main.go
+  api:
+    build:
+      dockerfile: Dockerfile
+      context: .
+      # 指定上下文为当前目录。Docker 会在当前目录下查找构建所需的文件
+    ports:
+      - 8080:8080
+      - 9090:9090
+    environment:
+      - DB_SOURCE=postgresql://root:secret@postgres:5432/simple_bank?sslmode=disable
+      - REDIS_ADDRESS=redis:6379
     depends_on:
-      - db
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
+      - postgres
+      - redis
+    entrypoint: ["/app/wait-for.sh","postgres:5432","--","/app/start.sh"]
+    # 设置容器的入口点为 `/app/wait-for.sh` 脚本，用于等待数据库服务在 `postgres:5432` 端口完全可用。
+    # `wait-for.sh` 会等待 `postgres:5432` 端口响应，确保数据库已就绪后，才执行后续命令。
+    # 一旦数据库准备好，执行 `/app/start.sh` 脚本以初始化并运行应用程序。
+    command: ["/app/main"]
+     # `command` 指定容器运行时的主要可执行程序

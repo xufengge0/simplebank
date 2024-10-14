@@ -18,6 +18,7 @@ const (
 // 身份认证中间件
 func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		
 		// 从HTTP请求中提取authorization头部
 		authorizationHeader := ctx.GetHeader(authorizationHeaderKey)
 		if len(authorizationHeader) == 0 {
