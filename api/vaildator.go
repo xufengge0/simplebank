@@ -7,6 +7,7 @@ import (
 
 // 创建自定义的验证函数
 var vaildCurrency validator.Func = func(fieldlevel validator.FieldLevel) bool {
+	
 	// 尝试将字段的值断言为字符串类型
 	if currency, ok := fieldlevel.Field().Interface().(string); ok {
 		// 判断货币是否合法

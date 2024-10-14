@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "user.proto";
+
+package pb;
+// 生成的go文件
+option go_package = "github.com/techschool/simplebank/pb";
+
+message UpdateUserRequest {
+  string username = 1;
+  optional string full_name = 2; // 可选字段
+  optional string email = 3;
+  optional string password = 4;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+}

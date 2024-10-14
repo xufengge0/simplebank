@@ -37,7 +37,7 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		// 将err断言
 		if pqErr, ok := err.(*pq.Error); ok {
 			switch pqErr.Code.Name() {
-			case "foreign_key_violation", "unique_violation":	// 唯一、外键约束
+			case "foreign_key_violation", "unique_violation": // 唯一、外键约束
 				ctx.JSON(http.StatusForbidden, errorResponse(err)) // 返回403权限错误
 			}
 		}
@@ -73,9 +73,9 @@ func (server *Server) getAccount(ctx *gin.Context) {
 
 	// 比较账户的owner是否与token中的username一致
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if account.Owner!= authPayload.Username {
-		err:=errors.New("account doesn't belong to the authenticated user")
-		ctx.JSON(http.StatusUnauthorized,errorResponse(err))
+	if account.Owner != authPayload.Username {
+		err := errors.New("account doesn't belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 	}
 
 	ctx.JSON(http.StatusOK, account)
@@ -89,7 +89,7 @@ type listAccountRequest struct {
 
 func (server *Server) listAccount(ctx *gin.Context) {
 	var req listAccountRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {  // 将 URL 查询参数 绑定到结构体
+	if err := ctx.ShouldBindQuery(&req); err != nil { // 从URL查询字符串中提取参数
 		ctx.JSON(http.StatusBadRequest, errorResponse(err)) // 返回请求参数错误
 		return
 	}

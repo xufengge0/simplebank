@@ -1,17 +1,21 @@
 package api
 
+/*
+	处理用户注册和登录的api
+*/
 import (
 	"database/sql"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 	db "github.com/techschool/simplebank/db/sqlc"
 	"github.com/techschool/simplebank/util"
 )
 
-// createUser的请求结构体
+// 注册的请求结构体
 type createUserRequest struct {
 	Username string `json:"username" binding:"required,alphanum"` // 限制ASCII码
 	Password string `json:"password" binding:"required,min=6"`
@@ -19,7 +23,7 @@ type createUserRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 }
 
-// 回复的结构体
+// 注册回复的结构体
 type createUserResponse struct {
 	Username          string    `json:"username"`
 	FullName          string    `json:"full_name"`
@@ -86,8 +90,12 @@ type LoginUserRequest struct {
 
 // 登录回复结构体
 type LoginUserResponse struct {
-	AccessToken string             `json:"access_token"`
-	User        createUserResponse `json:"user"`
+	SessionID             uuid.UUID          `json:"session_id"`
+	AccessToken           string             `json:"access_token"`
+	AccessTokenExpiresAt  time.Time          `json:"access_token_expires_at"`
+	RefreshToken          string             `json:"refresh_token"`
+	RefreshTokenExpiresAt time.Time          `json:"refresh_token_expires_at"`
+	User                  createUserResponse `json:"user"`
 }
 
 func (server *Server) loginUser(ctx *gin.Context) {
@@ -115,18 +123,42 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	// 创建token
-	accessToken, err := server.tokenMaker.CreateToken(user.Username, server.config.AccessTokenDurationMinutes)
-	if err!= nil {
+	// 创建accessToken
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.AccessTokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	// 创建refreshToken
+	refreshToken, refreshTokenPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.RefreshTokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	// 将refreshToken写入数据库
+	session, err := server.store.CreateSession(ctx, db.CreateSessionParams{
+		ID:           refreshTokenPayload.ID,
+		Username:     user.Username,
+		RefreshToken: refreshToken,
+		UserAgent:    ctx.Request.UserAgent(),
+		ClientIp:     ctx.ClientIP(),
+		IsBlocked:    false,
+		ExpiresAt:    refreshTokenPayload.ExpiredAt,
+	})
+	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
 	res := LoginUserResponse{
-		AccessToken: accessToken,
-		User:        newUserResponse(user),
+		SessionID:             session.ID,
+		AccessToken:           accessToken,
+		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiresAt: refreshTokenPayload.ExpiredAt,
+		User:                  newUserResponse(user),
 	}
 
 	ctx.JSON(http.StatusOK, res)
-	
+
 }

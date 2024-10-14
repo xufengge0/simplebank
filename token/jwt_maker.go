@@ -21,18 +21,19 @@ func NewJWTMaker(secretKey string) (Maker, error) {
 	return &JWTMaker{secretKey}, nil
 }
 // 创建token, 并返回token字符串
-func (m *JWTMaker) CreateToken(username string, duration time.Duration) (string, error) {
+func (m *JWTMaker) CreateToken(username string, duration time.Duration) (string,*Payload, error) {
 	// 创建一个新的payload
 	payload, err := NewPayload(username, duration)
 	if err != nil {
-		return "", err
+		return "",payload, err
 	}
 
 	// 创建一个新的JWT
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, payload) // 签名方法为HS256
 
 	// 使用secretKey进行签名
-	return jwtToken.SignedString([]byte(m.secretKey))
+	token,err:= jwtToken.SignedString([]byte(m.secretKey))
+	return token,payload,err
 }
 
 // 验证token是否有效, 并返回payload

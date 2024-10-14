@@ -22,7 +22,7 @@ import (
 func TestGetAccount(t *testing.T) {
 	user ,_:= RandomUser(t)
 	account := RandomAccount(user.Username)
-	// 
+	
 	testCase := []struct {
 		name          string
 		accountID     int64
@@ -108,6 +108,7 @@ func TestGetAccount(t *testing.T) {
 
 			// 初始化 GoMock 控制器
 			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)

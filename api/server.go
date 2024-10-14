@@ -31,9 +31,10 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 		tokenMaker: tokenMaker,
 	}
 
-	// 尝试将 Engine() 返回的值断言为 *validator.Validate 类型
+	// 尝试将Engine()返回的值断言为 *validator.Validate 类型
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		// 在验证引擎 v 上为 "currency" 标签注册了 validCurrency 自定义验证函数
+
+		// 在验证引擎v上为"currency"标签注册validCurrency自定义验证函数
 		v.RegisterValidation("currency", vaildCurrency)
 	}
 
@@ -43,15 +44,16 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 
 func (server *Server) setupRouter() {
 	router := gin.Default()
-	
+
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 	authRoutes.POST("/accounts", server.createAccount)   // 创建账户
 	authRoutes.GET("/accounts/:id", server.getAccount)   // 根据id获取账户
 	authRoutes.GET("/accounts", server.listAccount)      // 根据page_id、page_size获取账户
 	authRoutes.POST("/transfers", server.createTransfer) // 转账
 
-	router.POST("/users", server.createUser)      // 用户注册
-	router.POST("/users/login", server.loginUser) // 用户登录，并返回令牌
+	router.POST("/users", server.createUser)                     // 用户注册
+	router.POST("/users/login", server.loginUser)                // 用户登录，并返回访问令牌、刷新令牌
+	router.POST("/tokens/renew_access", server.renewAccessToken) // 根据刷新令牌返回访问令牌
 
 	server.router = router
 }

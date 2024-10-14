@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+
+package pb;
+// 生成的go文件
+option go_package = "github.com/techschool/simplebank/pb";
+
+message VerifyEmailRequest {
+  int64 email_id = 1;
+  string secret_code = 2;
+}
+
+message VerifyEmailResponse {
+  bool isVerified = 1;
+}

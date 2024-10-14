@@ -11,7 +11,7 @@ import (
 	"github.com/techschool/simplebank/token"
 )
 
-// createAccount的请求结构体
+// transferRequest 是转账请求的结构体
 type transferRequest struct {
 	FromAccountID int64  `json:"from_account_id" binding:"required,min=1"`
 	ToAccountID   int64  `json:"to_account_id" binding:"required,min=1"`
@@ -31,10 +31,12 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 	if !valid {
 		return
 	}
+
+	// 检查转出账户是否属于当前用户
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	if fromAccount.Owner!= authPayload.Username {
-		err:=errors.New("account doesn't belong to the authenticated user")
-		ctx.JSON(http.StatusUnauthorized,errorResponse(err))
+	if fromAccount.Owner != authPayload.Username {
+		err := errors.New("account doesn't belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
