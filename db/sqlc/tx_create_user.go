@@ -29,6 +29,8 @@ func (store *SqlStore) CreateUserTX(ctx context.Context, arg CreateUserTXParams)
 				switch pqErr.Code.Name() {
 				case "unique_violation": // 唯一约束(username、email)
 					return status.Errorf(codes.AlreadyExists, "username already exists:%s", err)
+				case "too_many_connections" : // 连接数过多
+					return status.Errorf(codes.ResourceExhausted, "too many connections:%s", err)
 				}
 			}
 			return status.Errorf(codes.Internal, "failed to create user:%s", err)

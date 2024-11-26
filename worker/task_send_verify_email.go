@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/hibiken/asynq"
-	"github.com/rs/zerolog/log"
 	db "github.com/techschool/simplebank/db/sqlc"
 	"github.com/techschool/simplebank/util"
 )
@@ -29,13 +28,13 @@ func (distributor *RedisTaskDistributor) DistributeTaskSendVerifyEmail(ctx conte
 	// 构建任务
 	task := asynq.NewTask(TaskSendVerifyEmail, jsonPayload, opts...)
 	// 发送任务到redis
-	info, err := distributor.client.EnqueueContext(ctx, task)
+	_, err = distributor.client.EnqueueContext(ctx, task)
 	if err != nil {
 		return fmt.Errorf("could not enqueue task: %v", err)
 	}
 
-	log.Info().Str("type", task.Type()).Bytes("payload", task.Payload()).
-		Str("queue", info.Queue).Int("max_retry", info.MaxRetry).Msg("enqueued task")
+	// log.Info().Str("type", task.Type()).Bytes("payload", task.Payload()).
+	// 	Str("queue", info.Queue).Int("max_retry", info.MaxRetry).Msg("enqueued task")
 
 	return nil
 }
@@ -57,7 +56,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 	}
 
 	// 在数据库中创建verify_email
-	verifyEmail, err := processor.store.CreateVerifyEmail(ctx, db.CreateVerifyEmailParams{
+	_, err = processor.store.CreateVerifyEmail(ctx, db.CreateVerifyEmailParams{
 		Username:   user.Username,
 		Email:      user.Email,
 		SecretCode: util.RandomString(32),
@@ -67,20 +66,20 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 	}
 
 	// 发送验证邮件
-	subject := "Simple Bank - Verify Email"
-	verifyUrl := fmt.Sprintf("http://localhost:8080/v1/verify_email?email_id=%d&secret_code=%s",
-		verifyEmail.ID, verifyEmail.SecretCode)
-	content := fmt.Sprintf(`Hello %s,<br/>
-	Thank you for registering with us!<br/>
-	Please <a href="%s">click here</a> to verify your email address.<br/>`,user.FullName, verifyUrl)
-	to := []string{user.Email}
+	// subject := "Simple Bank - Verify Email"
+	// verifyUrl := fmt.Sprintf("http://localhost:8080/v1/verify_email?email_id=%d&secret_code=%s",
+	// 	verifyEmail.ID, verifyEmail.SecretCode)
+	// content := fmt.Sprintf(`Hello %s,<br/>
+	// Thank you for registering with us!<br/>
+	// Please <a href="%s">click here</a> to verify your email address.<br/>`,user.FullName, verifyUrl)
+	// to := []string{user.Email}
 
-	err = processor.mailer.SenderEmail(subject,content,to,nil,nil,nil)
-	if err!= nil {
-		return fmt.Errorf("could not send email: %v", err)
-	}
+	// err = processor.mailer.SenderEmail(subject,content,to,nil,nil,nil)
+	// if err!= nil {
+	// 	return fmt.Errorf("could not send email: %v", err)
+	// }
 
-	log.Info().Str("type", task.Type()).Bytes("payload", task.Payload()).
-		Str("email", user.Email).Msg("processing task: send verify email")
+	// log.Info().Str("type", task.Type()).Bytes("payload", task.Payload()).
+	// 	Str("email", user.Email).Msg("processing task: send verify email")
 	return nil
 }
