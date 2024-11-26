@@ -46,6 +46,7 @@ evans:
 	
 redis:
 	docker run -d --name redis --network app-network redis:7-alpine
-
+k6:
+	k6 run register_test.js
 
 .PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mock proto

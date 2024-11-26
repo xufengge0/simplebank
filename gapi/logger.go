@@ -75,14 +75,21 @@ func HttpLogger(handler http.Handler) http.Handler {
 		logger := log.Info()
 		if rec.StatusCode != http.StatusOK {
 			logger = log.Error().Bytes("body", rec.Body)
-		}
-		
-		logger.Str("protocol", "http").
+			logger.Str("protocol", "http").
 			Str("method", req.Method).
 			Str("path", req.RequestURI).
 			Int("status_code", rec.StatusCode).
 			Str("status_msg", http.StatusText(rec.StatusCode)).
 			Dur("took", dur).
 			Msg("http request")
+		}
+		
+		/* logger.Str("protocol", "http").
+			Str("method", req.Method).
+			Str("path", req.RequestURI).
+			Int("status_code", rec.StatusCode).
+			Str("status_msg", http.StatusText(rec.StatusCode)).
+			Dur("took", dur).
+			Msg("http request") */
 	})
 }

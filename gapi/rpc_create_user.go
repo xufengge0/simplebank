@@ -2,15 +2,11 @@ package gapi
 
 import (
 	"context"
-	"time"
 
-	"github.com/hibiken/asynq"
-
-	db "github.com/techschool/simplebank/db/sqlc"
+	kafkago "github.com/techschool/simplebank/kafkago"
 	"github.com/techschool/simplebank/pb"
 	"github.com/techschool/simplebank/util"
 	"github.com/techschool/simplebank/val"
-	"github.com/techschool/simplebank/worker"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
 	"google.golang.org/grpc/codes"
@@ -29,7 +25,17 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		return nil, status.Errorf(codes.Internal, "failed to hash password:%s", err)
 	}
 
-	arg := db.CreateUserTXParams{
+	user, err := kafkago.WriteKafka(ctx, kafkago.UserRegistration{
+		Username:     req.GetUsername(),
+		HashPassword: hashPassword,
+		FullName:     req.GetFullName(),
+		Email:        req.GetEmail(),
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to write message:%s", err)
+	}
+
+	/* arg := db.CreateUserTXParams{
 		CreateUserParams: db.CreateUserParams{
 			Username:       req.GetUsername(),
 			HashedPassword: hashPassword,
@@ -55,15 +61,15 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 			return nil
 		},
 	}
-	
+
 	// 创建用户，并发送验证邮件（一次transaction）
 	txResult, err := server.store.CreateUserTX(ctx, arg)
 	if err!= nil {
 		return nil, status.Errorf(codes.Internal, "failed to create user:%s", err)
-	}
+	} */
 
 	res := &pb.CreateUserResponse{
-		User: convertUser(txResult.User),
+		User: convertUser(user),
 	}
 
 	return res, nil

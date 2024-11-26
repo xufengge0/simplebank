@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
+	"github.com/segmentio/kafka-go"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -25,6 +27,8 @@ import (
 	"github.com/techschool/simplebank/gapi"
 	"github.com/techschool/simplebank/mail"
 	"github.com/techschool/simplebank/pb"
+
+	kafkago "github.com/techschool/simplebank/kafkago"
 	"github.com/techschool/simplebank/util"
 	"github.com/techschool/simplebank/worker"
 	"google.golang.org/grpc"
@@ -38,6 +42,7 @@ var interruptSignals = []os.Signal{
 	syscall.SIGINT,
 	syscall.SIGTERM,
 }
+var reader *kafka.Reader
 
 func main() {
 
@@ -71,6 +76,19 @@ func main() {
 
 	// 创建一个 errgroup，用于管理多个 goroutine 的执行和错误处理
 	waitGroup, ctx := errgroup.WithContext(ctx)
+
+	// 初始化 Kafka 消费者
+	consumer := &kafkago.KafkaConsumer{
+		Store:           store,
+		TaskDistributor: taskDistributor,
+		Reader:          reader,
+	}
+	// 初始化 Kafka 生产者
+	kafkago.InitKafkaWriter()
+	// 运行 Kafka 消费者
+	go consumer.ConsumeUserRegistrationMessages(ctx)
+	go listener()
+	fmt.Println("start Kafka...")
 
 	runGatewayServer(ctx, waitGroup, config, store, taskDistributor)
 	runGrpcServer(ctx, waitGroup, config, store, taskDistributor)
@@ -219,7 +237,6 @@ func runGatewayServer(
 		log.Fatal().Err(err).Msg("cannot register handler server:")
 	}
 
-	
 	// 创建一个 HTTP 请求路由器（ServeMux）
 	mux := http.NewServeMux()
 	// 将所有请求传递给 grpcMux 进行处理
@@ -240,10 +257,10 @@ func runGatewayServer(
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://localhost:3000"},
 		AllowedMethods: []string{
-			http.MethodGet, 
-			http.MethodPost, 
-			http.MethodPut, 
-			http.MethodDelete, 
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodDelete,
 			http.MethodPatch},
 		AllowedHeaders: []string{
 			"Authidrization",
@@ -286,4 +303,17 @@ func runGatewayServer(
 		return nil
 	})
 
+}
+func listener() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-c
+	fmt.Println(sig)
+
+	if reader != nil {
+		reader.Close()
+	}
+
+	kafkago.CloseKafkaWriter()
+	// os.Exit(0)
 }
